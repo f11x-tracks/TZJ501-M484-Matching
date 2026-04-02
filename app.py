@@ -91,8 +91,8 @@ def load_test() -> pd.DataFrame:
                 col_map[c] = "Fit_Rate"
         df = df.rename(columns=col_map)
 
-        required = ["Point_No", "Film_Thickness_nm", "X_mm", "Y_mm",
-                    "DispT", "PumpT", "DispSS", "RlxT", "RlxSS", "Cast", "Other"]
+        # Only require essential measurement columns
+        required = ["Point_No", "Film_Thickness_nm", "X_mm", "Y_mm"]
         missing = [r for r in required if r not in df.columns]
         if missing:
             print(f"WARNING: {fp} missing columns {missing} – skipping")
@@ -116,16 +116,19 @@ def load_test() -> pd.DataFrame:
             wafer_ids.append(f"{fname}_W{wafer_num:02d}")
         df["Wafer_ID"] = wafer_ids
 
-        # Test condition label (unique combo of all condition columns)
-        df["Condition"] = (
-            "DispT="  + df["DispT"].astype(str)  + " | "
-            "PumpT="  + df["PumpT"].astype(str)  + " | "
-            "DispSS=" + df["DispSS"].astype(str) + " | "
-            "RlxT="   + df["RlxT"].astype(str)   + " | "
-            "RlxSS="  + df["RlxSS"].astype(str)  + " | "
-            "Cast="   + df["Cast"].astype(str)   + " | "
-            "Other="  + df["Other"].fillna("").astype(str)
-        )
+        # Test condition label (build from available condition columns)
+        condition_parts = []
+        condition_cols = ["DispT", "PumpT", "DispSS", "RlxT", "RlxSS", "Cast", "Other"]
+        for col in condition_cols:
+            if col in df.columns:
+                value = df[col].astype(str) if col != "Other" else df[col].fillna("").astype(str)
+                condition_parts.append(f"{col}=" + value)
+        
+        if condition_parts:
+            df["Condition"] = " | ".join(condition_parts)
+        else:
+            # No condition columns available - use filename as identifier
+            df["Condition"] = f"File: {fname}"
         df["ENTITY"] = "TZJ501"
         df["Source"] = f"TEST ({fname})"
         frames.append(df)

@@ -1,0 +1,12 @@
+# Core data manipulation and analysis
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Scientific computing
+scipy>=1.10.0
+
+# Interactive plotting and visualization
+plotly>=5.15.0
+
+# Web dashboard framework
+dash>=2.14.0
