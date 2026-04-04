@@ -117,15 +117,18 @@ def load_test() -> pd.DataFrame:
         df["Wafer_ID"] = wafer_ids
 
         # Test condition label (build from available condition columns)
-        condition_parts = []
         condition_cols = ["DispT", "PumpT", "DispSS", "RlxT", "RlxSS", "Cast", "Other"]
-        for col in condition_cols:
-            if col in df.columns:
-                value = df[col].astype(str) if col != "Other" else df[col].fillna("").astype(str)
-                condition_parts.append(f"{col}=" + value)
+        available_cols = [col for col in condition_cols if col in df.columns]
         
-        if condition_parts:
-            df["Condition"] = " | ".join(condition_parts)
+        if available_cols:
+            def build_condition(row):
+                parts = []
+                for col in available_cols:
+                    value = row[col] if col != "Other" else (row[col] if pd.notna(row[col]) else "")
+                    parts.append(f"{col}={value}")
+                return " | ".join(parts)
+            
+            df["Condition"] = df.apply(build_condition, axis=1)
         else:
             # No condition columns available - use filename as identifier
             df["Condition"] = f"File: {fname}"
